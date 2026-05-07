@@ -300,3 +300,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dateInput) dateInput.addEventListener('change', updateTimeSlots);
   if (therapistSelect) therapistSelect.addEventListener('change', updateTimeSlots);
 });
+// ========== EXPORT GLOBAL FUNCTIONS ==========
+window.renderWebsite = renderWebsite;
+window.updateTimeSlots = updateTimeSlots;
+window.submitBooking = submitBooking;
+window.openMobileMenu = openMobileMenu;
+window.closeMobileMenu = closeMobileMenu;
+window.selectTimeSlot = selectTimeSlot;
+
+// Data getter untuk admin
+window.getDB = () => DB;
+window.getSettings = () => SETTINGS;
