@@ -2790,6 +2790,452 @@ setInterval(() => {
 })();
 
 renderWebsite();
+  
+  // ========== GOOGLE SHEETS INTEGRATION ==========
+const API_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; // Ganti dengan URL dari Apps Script
+
+// Sync flag
+let isSyncing = false;
+let lastSyncTime = 0;
+const SYNC_INTERVAL = 5000; // Sync setiap 5 detik
+
+// Fetch all data from Google Sheets
+async function fetchAllData() {
+  try {
+    const response = await fetch(`${API_URL}?action=GET_ALL_DATA&t=${Date.now()}`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      // Update local DB with fetched data
+      if (result.data.services) DB.services = result.data.services.map(s => ({
+        ...s, 
+        active: s.active === 'true' || s.active === true,
+        price: parseInt(s.price) || 0,
+        duration: parseInt(s.duration) || 60
+      }));
+      
+      if (result.data.team) DB.team = result.data.team.map(t => ({
+        ...t, 
+        rating: parseFloat(t.rating) || 5,
+        exp: parseInt(t.exp) || 0,
+        schedule: {
+          days: t.schedule_days ? t.schedule_days.split(',').map(Number) : [1,2,3,4,5],
+          slots: t.schedule_slots ? t.schedule_slots.split(',') : getAllSlots()
+        }
+      }));
+      
+      if (result.data.bookings) DB.bookings = result.data.bookings;
+      if (result.data.customers) DB.customers = result.data.customers;
+      if (result.data.testimonials) DB.testimonials = result.data.testimonials.map(t => ({
+        ...t,
+        show: t.show === 'true' || t.show === true
+      }));
+      
+      if (result.data.settings) {
+        Object.assign(SETTINGS, result.data.settings);
+        if (SETTINGS.timeSlots) SETTINGS.timeSlots = SETTINGS.timeSlots.split(',');
+      }
+      
+      // Update UI
+      renderWebsite();
+      if (document.getElementById('admin-panel').classList.contains('open')) {
+        renderAdmin();
+      }
+      
+      return true;
+    }
+  } catch(e) {
+    console.warn('Sync error:', e);
+  }
+  return false;
+}
+
+// Save booking to Google Sheets
+async function syncBookingToSheet(bookingData) {
+  try {
+    const params = new URLSearchParams({
+      action: 'SAVE_BOOKING',
+      id: bookingData.id,
+      name: bookingData.name,
+      phone: bookingData.phone,
+      service: bookingData.service,
+      therapist: bookingData.therapist,
+      date: bookingData.date,
+      time: bookingData.time,
+      status: bookingData.status,
+      note: bookingData.note || ''
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+    return result.success;
+  } catch(e) {
+    console.error('Save booking error:', e);
+    return false;
+  }
+}
+
+// Save service to Google Sheets
+async function syncServiceToSheet(serviceData) {
+  try {
+    const params = new URLSearchParams({
+      action: 'SAVE_SERVICE',
+      id: serviceData.id,
+      name: serviceData.name,
+      duration: serviceData.duration,
+      price: serviceData.price,
+      desc: serviceData.desc,
+      icon: serviceData.icon,
+      active: serviceData.active
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+    return result.success;
+  } catch(e) {
+    console.error('Save service error:', e);
+    return false;
+  }
+}
+
+// Save therapist to Google Sheets
+async function syncTherapistToSheet(therapistData) {
+  try {
+    const params = new URLSearchParams({
+      action: 'SAVE_THERAPIST',
+      id: therapistData.id,
+      name: therapistData.name,
+      spec: therapistData.spec,
+      cert: therapistData.cert,
+      exp: therapistData.exp,
+      emoji: therapistData.emoji,
+      status: therapistData.status,
+      rating: therapistData.rating,
+      wa: therapistData.wa || '',
+      photo: therapistData.photo || '',
+      schedule_days: therapistData.schedule?.days?.join(',') || '',
+      schedule_slots: therapistData.schedule?.slots?.join(',') || ''
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+    return result.success;
+  } catch(e) {
+    console.error('Save therapist error:', e);
+    return false;
+  }
+}
+
+// Update booking status
+async function updateBookingStatusRemote(id, status) {
+  try {
+    const params = new URLSearchParams({
+      action: 'UPDATE_BOOKING_STATUS',
+      id: id,
+      status: status
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+    return result.success;
+  } catch(e) {
+    console.error('Update status error:', e);
+    return false;
+  }
+}
+
+// Delete item from sheet
+async function deleteItemRemote(collection, id) {
+  try {
+    const params = new URLSearchParams({
+      action: 'DELETE_ITEM',
+      collection: collection,
+      id: id
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+    return result.success;
+  } catch(e) {
+    console.error('Delete error:', e);
+    return false;
+  }
+}
+
+// Sync settings to sheet
+async function syncSettingsToSheet() {
+  try {
+    const params = new URLSearchParams({ action: 'UPDATE_SETTINGS' });
+    params.append('nameFirst', SETTINGS.nameFirst);
+    params.append('nameLast', SETTINGS.nameLast);
+    params.append('address', SETTINGS.address);
+    params.append('phone', SETTINGS.phone);
+    params.append('email', SETTINGS.email);
+    params.append('hoursWeekday', SETTINGS.hoursWeekday);
+    params.append('hoursSat', SETTINGS.hoursSat);
+    params.append('hoursSun', SETTINGS.hoursSun);
+    params.append('timeSlots', SETTINGS.timeSlots.join(','));
+    params.append('waTemplate', SETTINGS.waTemplate);
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+    return result.success;
+  } catch(e) {
+    console.error('Sync settings error:', e);
+    return false;
+  }
+}
+
+// Auto sync loop
+async function autoSync() {
+  if (isSyncing) return;
+  isSyncing = true;
+  
+  try {
+    await fetchAllData();
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// Override save functions to also sync to Google Sheets
+const originalSubmitBooking = submitBooking;
+submitBooking = async function() {
+  // Call original validation first
+  const name = document.getElementById('b-name').value.trim();
+  const phone = document.getElementById('b-phone').value.trim();
+  const service = document.getElementById('b-service').value;
+  const date = document.getElementById('b-date').value;
+  const time = document.getElementById('b-time').value;
+  const note = document.getElementById('b-note').value.trim();
+  
+  const therapistSelect = document.getElementById('b-therapist');
+  const therapistId = therapistSelect ? parseInt(therapistSelect.value) : null;
+  const therapistObj = therapistId ? DB.team.find(t => t.id === therapistId) : null;
+  const therapistName = therapistObj ? therapistObj.name : (DB.team.find(t => t.status === 'aktif')?.name || '-');
+  
+  if (!name || !service || !date) { alert('Harap lengkapi formulir!'); return; }
+  if (!therapistId) { alert('Harap pilih terapis terlebih dahulu!'); return; }
+  if (!time) {
+    const timeError = document.getElementById('b-time-error');
+    if (timeError) { timeError.style.display = 'block'; timeError.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    return;
+  }
+  
+  const newBooking = {
+    id: nextId.booking++,
+    name, phone, service,
+    therapist: therapistName,
+    date, time,
+    status: 'menunggu', note
+  };
+  
+  DB.bookings.push(newBooking);
+  
+  // Sync to Google Sheets
+  await syncBookingToSheet(newBooking);
+  
+  // Update customer
+  const existing = DB.customers.find(c => c.phone === phone && phone !== '' && phone !== '-');
+  if (existing) {
+    existing.visits += 1;
+  } else {
+    DB.customers.push({ id: nextId.customer++, name, phone: phone || '-', email: '-', visits: 1, spend: 0 });
+  }
+  
+  persist();
+  
+  // ... rest of WA sending logic (same as original)
+  const [y, m, d] = date.split('-');
+  const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const tglFormatted = `${parseInt(d)} ${bulanNama[parseInt(m)-1]} ${y}`;
+  const businessName = SETTINGS.name || 'Serene Touch';
+  const template = SETTINGS.waTemplate || '';
+  const waMsg = template
+    .replace(/{{bisnis}}/g, businessName)
+    .replace(/{{nama}}/g, name)
+    .replace(/{{hp}}/g, phone || '-')
+    .replace(/{{layanan}}/g, service)
+    .replace(/{{terapis}}/g, therapistName)
+    .replace(/{{tanggal}}/g, tglFormatted)
+    .replace(/{{jam}}/g, time)
+    .replace(/{{catatan}}/g, note || '-');
+  
+  let targetPhone = '';
+  if (therapistObj && therapistObj.wa) {
+    targetPhone = therapistObj.wa;
+  } else {
+    targetPhone = SETTINGS.phone || '';
+  }
+  const rawPhone = targetPhone.replace(/\D/g, '');
+  const waNumber = rawPhone.startsWith('0') ? '62' + rawPhone.slice(1) : rawPhone.startsWith('62') ? rawPhone : '62' + rawPhone;
+  
+  document.getElementById('b-name').value = '';
+  document.getElementById('b-phone').value = '';
+  const n = new Date();
+  const todayVal = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  document.getElementById('b-date').value = todayVal;
+  document.getElementById('b-note').value = '';
+  document.getElementById('b-service').selectedIndex = 0;
+  if (therapistSelect) therapistSelect.selectedIndex = 0;
+  document.getElementById('b-time').value = '';
+  const daysNote = document.getElementById('b-therapist-days-note');
+  if (daysNote) daysNote.style.display = 'none';
+  updateTimeSlots();
+  
+  document.getElementById('b-msg').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('b-msg').style.display = 'none';
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(waMsg)}`, '_blank');
+  }, 1000);
+  
+  // Refresh data from server after a moment
+  setTimeout(() => autoSync(), 2000);
+};
+
+// Override saveService to sync
+const originalSaveService = saveService;
+saveService = async function() {
+  const data = {
+    id: editingServiceId !== null ? editingServiceId : nextId.service++,
+    name: document.getElementById('ms-name').value.trim() || 'Layanan Baru',
+    duration: parseInt(document.getElementById('ms-duration').value) || 60,
+    price: parseInt(document.getElementById('ms-price').value) || 100000,
+    desc: document.getElementById('ms-desc').value.trim() || '',
+    icon: document.getElementById('ms-icon').value.trim() || '💆',
+    active: document.getElementById('ms-status').value === '1'
+  };
+  
+  if (editingServiceId !== null) {
+    const idx = DB.services.findIndex(x => x.id === editingServiceId);
+    if (idx !== -1) DB.services[idx] = { ...DB.services[idx], ...data };
+    editingServiceId = null;
+  } else {
+    DB.services.push(data);
+  }
+  
+  // Sync to Google Sheets
+  await syncServiceToSheet(data);
+  
+  persist();
+  closeModal('modal-service');
+  renderAdmin();
+  renderWebsite();
+  alert('✅ Layanan berhasil disimpan!');
+  
+  setTimeout(() => autoSync(), 1000);
+};
+
+// Override saveTherapist to sync
+const originalSaveTherapist = saveTherapist;
+saveTherapist = async function() {
+  const data = {
+    id: editingTherapistId !== null ? editingTherapistId : nextId.team++,
+    name: document.getElementById('mt-name').value.trim() || 'Terapis Baru',
+    spec: document.getElementById('mt-spec').value.trim() || '',
+    cert: document.getElementById('mt-cert').value.trim() || 'BNSP',
+    exp: parseInt(document.getElementById('mt-exp').value) || 1,
+    emoji: document.getElementById('mt-emoji').value.trim() || '👤',
+    wa: document.getElementById('mt-wa').value.trim() || '',
+    status: document.getElementById('mt-status').value,
+    photo: document.getElementById('mt-photo-data').value || null,
+    rating: 5,
+    schedule: { days: [1,2,3,4,5], slots: [...getAllSlots()] }
+  };
+  
+  if (editingTherapistId !== null) {
+    const idx = DB.team.findIndex(x => x.id === editingTherapistId);
+    if (idx !== -1) DB.team[idx] = { ...DB.team[idx], ...data };
+    editingTherapistId = null;
+  } else {
+    DB.team.push(data);
+  }
+  
+  // Sync to Google Sheets
+  await syncTherapistToSheet(data);
+  
+  persist();
+  closeModal('modal-therapist');
+  renderAdmin();
+  renderWebsite();
+  alert('✅ Terapis berhasil disimpan!');
+  
+  setTimeout(() => autoSync(), 1000);
+};
+
+// Override deleteItem to sync
+const originalDeleteItem = deleteItem;
+deleteItem = async function(collection, id) {
+  if (!confirm('Yakin hapus data ini?')) return;
+  
+  // Sync to Google Sheets
+  await deleteItemRemote(collection, id);
+  
+  DB[collection] = DB[collection].filter(x => x.id !== id);
+  persist();
+  renderAdmin();
+  renderWebsite();
+  
+  setTimeout(() => autoSync(), 1000);
+};
+
+// Override saveSettings to sync
+const originalSaveSettings = saveSettings;
+saveSettings = async function() {
+  const nameFirst = document.getElementById('s-name-first').value.trim();
+  const nameLast  = document.getElementById('s-name-last').value.trim();
+  const address  = document.getElementById('s-address').value.trim();
+  const phone    = document.getElementById('s-phone').value.trim();
+  const email    = document.getElementById('s-email').value.trim();
+  const hWeekday = document.getElementById('s-hours-weekday').value.trim();
+  const hSat     = document.getElementById('s-hours-sat').value.trim();
+  const hSun     = document.getElementById('s-hours-sun').value.trim();
+  
+  SETTINGS.nameFirst = nameFirst;
+  SETTINGS.nameLast  = nameLast;
+  SETTINGS.name    = (nameFirst + ' ' + nameLast).trim();
+  SETTINGS.address = address;
+  SETTINGS.phone   = phone;
+  SETTINGS.email   = email;
+  SETTINGS.hoursWeekday = hWeekday;
+  SETTINGS.hoursSat     = hSat;
+  SETTINGS.hoursSun     = hSun;
+  
+  // Sync to Google Sheets
+  await syncSettingsToSheet();
+  
+  saveCfg();
+  updateLogoAll(nameFirst, nameLast);
+  
+  // ... rest of original saveSettings UI updates
+  const city = address.split(',').pop().trim() || address;
+  const footerDesc = document.querySelector('.footer-desc');
+  if (footerDesc) footerDesc.textContent = `Layanan pijat premium yang menghadirkan kedamaian dan pemulihan untuk tubuh, pikiran, dan jiwa Anda di ${city}.`;
+  
+  const infoItems = document.querySelectorAll('#booking .info-item');
+  if (infoItems[0]) infoItems[0].innerHTML = `<span class="info-item-icon">📍</span> ${address}`;
+  if (infoItems[1]) infoItems[1].innerHTML = `<span class="info-item-icon">📞</span> ${phone}`;
+  if (infoItems[2]) infoItems[2].innerHTML = `<span class="info-item-icon">⏰</span><div><div>Senin–Jumat: ${hWeekday}</div><div>Sabtu: ${hSat}</div><div>Minggu: ${hSun}</div></div>`;
+  if (infoItems[3]) infoItems[3].innerHTML = `<span class="info-item-icon">📧</span> ${email}`;
+  
+  const btn = document.querySelector('#page-settings button[onclick="saveSettings()"]');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Semua perubahan tersimpan!';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+  }
+  
+  setTimeout(() => autoSync(), 1000);
+};
+
+// Initialize auto sync
+setInterval(autoSync, SYNC_INTERVAL);
+
+// Initial sync on page load
+window.addEventListener('load', () => {
+  setTimeout(() => autoSync(), 500);
+});
 </script>
 </body>
 </html>
