@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rumah Terapi - Selamat Datang</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            background: #1a1a1a;
+        }
+
+        /* Container utama untuk efek scroll */
+        .scroll-container {
+            position: relative;
+            height: 500vh; /* Tinggi untuk scroll yang panjang */
+        }
+
+        /* Sticky container untuk background */
+        .sticky-wrapper {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Background image container */
+        .background-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23f5f5f5" width="1200" height="600"/><path fill="%238B7355" d="M0 200 L1200 200 L1200 600 L0 600 Z"/><rect fill="%23E8DCC4" x="100" y="150" width="400" height="300"/><rect fill="%232F4F4F" x="150" y="200" width="100" height="150"/><rect fill="%232F4F4F" x="350" y="200" width="100" height="150"/><polygon fill="%23696969" points="100,150 300,50 500,150"/><rect fill="%234A4A4A" x="250" y="300" width="100" height="150"/><rect fill="%23FFD700" x="450" y="250" width="30" height="30" opacity="0.6"/></svg>');
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Exterior View */
+        .exterior-view {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .exterior-view.fade-out {
+            opacity: 0;
+        }
+
+        /* Interior View */
+        .interior-view {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            opacity: 0;
+            transition: opacity 1s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .interior-view.fade-in {
+            opacity: 1;
+        }
+
+        /* Content sections */
+        .content-section {
+            position: absolute;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .content-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .content-section h2 {
+            font-size: 3rem;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .content-section p {
+            font-size: 1.25rem;
+            color: #4a5568;
+            max-width: 800px;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        /* Hero Section - Exterior */
+        .hero-exterior {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6)),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><linearGradient id="sky" x1="0%25" y1="0%25" x2="0%25" y2="100%25"><stop offset="0%25" style="stop-color:%23FFB6C1;stop-opacity:1" /><stop offset="100%25" style="stop-color:%2387CEEB;stop-opacity:1" /></linearGradient></defs><rect fill="url(%23sky)" width="1200" height="800"/><rect fill="%23F5E6D3" x="300" y="350" width="600" height="350"/><polygon fill="%238B4513" points="250,350 600,150 950,350"/><rect fill="%23654321" x="300" y="350" width="600" height="50"/><rect fill="%232F4F4F" x="400" y="450" width="120" height="180"/><rect fill="%232F4F4F" x="680" y="450" width="120" height="180"/><rect fill="%23FFD700" x="520" y="480" width="160" height="120" opacity="0.8"/><circle fill="%23FFD700" cx="1050" cy="100" r="60" opacity="0.9"/><rect fill="%23228B22" x="50" y="550" width="200" height="250"/><rect fill="%23228B22" x="950" y="550" width="200" height="250"/><path fill="%238B7355" d="M550 700 L650 700 L650 800 L550 800 Z"/></svg>');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.1s ease-out;
+        }
+
+        .hero-exterior.zoom-in {
+            transform: scale(2);
+        }
+
+        .hero-content {
+            text-align: center;
+            color: white;
+            z-index: 2;
+            transition: opacity 0.5s ease;
+        }
+
+        .hero-content h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+            animation: fadeInDown 1s ease;
+        }
+
+        .hero-content p {
+            font-size: 1.5rem;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+            animation: fadeInUp 1s ease 0.3s both;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 1.2rem;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+
+        /* Door Transition Effect */
+        .door-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .door-overlay.active {
+            opacity: 1;
+        }
+
+        .door-text {
+            color: white;
+            font-size: 2rem;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.5s ease;
+        }
+
+        .door-overlay.active .door-text {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Interior Room View */
+        .interior-room {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(245,245,245,0.95), rgba(255,255,255,0.98)),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><rect fill="%23F5F5DC" width="1200" height="800"/><rect fill="%23DEB887" x="0" y="400" width="1200" height="400"/><rect fill="%238B7355" x="100" y="150" width="300" height="200"/><rect fill="%2387CEEB" x="120" y="170" width="120" height="80"/><rect fill="%2387CEEB" x="280" y="170" width="120" height="80"/><rect fill="%23D2691E" x="450" y="300" width="300" height="200"/><rect fill="%23F5DEB3" x="500" y="350" width="80" height="100"/><rect fill="%23F5DEB3" x="620" y="350" width="80" height="100"/><rect fill="%238B4513" x="450" y="450" width="300" height="20"/><circle fill="%23FFD700" cx="900" cy="120" r="50" opacity="0.6"/><rect fill="%23228B22" x="50" y="500" width="150" height="300"/><rect fill="%23228B22" x="1000" y="500" width="150" height="300"/></svg>');
+            background-size: cover;
+            background-position: center;
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .interior-room.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .room-content {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.8s ease;
+        }
+
+        .interior-room.visible .room-content {
+            transform: scale(1);
+        }
+
+        .room-content h2 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .room-content p {
+            color: #4a5568;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-20px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        /* Navigation dots */
+        .nav-dots {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid white;
+        }
+
+        .nav-dot.active {
+            background: white;
+            transform: scale(1.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+            .hero-content p {
+                font-size: 1.2rem;
+            }
+            .content-section h2 {
+                font-size: 2rem;
+            }
+            .content-section p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots">
+        <div class="nav-dot active" data-section="0"></div>
+        <div class="nav-dot" data-section="1"></div>
+        <div class="nav-dot" data-section="2"></div>
+        <div class="nav-dot" data-section="3"></div>
+    </div>
+
+    <!-- Hero Section - Exterior View -->
+    <div class="hero-exterior" id="heroExterior">
+        <div class="hero-content" id="heroContent">
+            <h1>🏡 Rumah Terapi</h1>
+            <p>Ruang Aman untuk Penyembuhan & Pertumbuhan</p>
+        </div>
+        <div class="scroll-indicator" onclick="scrollToSection(1)">
+            Scroll untuk masuk ↓
+        </div>
+    </div>
+
+    <!-- Door Transition Overlay -->
+    <div class="door-overlay" id="doorOverlay">
+        <div class="door-text">🚪 Membuka Pintu...</div>
+    </div>
+
+    <!-- Interior Room View -->
+    <div class="interior-room" id="interiorRoom">
+        <div class="room-content">
+            <h2>Selamat Datang di Dalam</h2>
+            <p>Ruangan yang nyaman dan tenang untuk proses terapi Anda.</p>
+            <p>Di sini, Anda akan menemukan ruang aman untuk berbagi, belajar, dan tumbuh bersama terapis profesional kami.</p>
+            <a href="#services" class="cta-button">Lihat Layanan Kami</a>
+        </div>
+    </div>
+
+    <!-- Scroll Container -->
+    <div class="scroll-container">
+        <!-- Section 1: Tentang Kami -->
+        <div class="content-section" id="section1">
+            <h2>🌿 Tentang Kami</h2>
+            <p>Kami adalah tim terapis profesional yang berdedikasi untuk membantu Anda menemukan keseimbangan hidup dan kesehatan mental yang optimal.</p>
+            <p>Dengan pendekatan yang hangat dan profesional, kami siap mendampingi perjalanan penyembuhan Anda.</p>
+        </div>
+
+        <!-- Section 2: Layanan -->
+        <div class="content-section" id="section2">
+            <h2>💫 Layanan Kami</h2>
+            <p>• Konseling Individual<br>
+               • Terapi Keluarga<br>
+               • Konseling Pasangan<br>
+               • Terapi Anak & Remaja<br>
+               • Manajemen Stres & Anxiety</p>
+        </div>
+
+        <!-- Section 3: Kontak -->
+        <div class="content-section" id="section3">
+            <h2>📞 Hubungi Kami</h2>
+            <p>Mari mulai perjalanan penyembuhan Anda hari ini.</p>
+            <p>📍 Jl. Sehat No. 123, Jakarta<br>
+               📱 0812-3456-7890<br>
+               ✉️ info@rumahterapi.com</p>
+            <a href="https://wa.me/62812345678" class="cta-button">Janji Temu via WhatsApp</a>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const heroExterior = document.getElementById('heroExterior');
+        const heroContent = document.getElementById('heroContent');
+        const doorOverlay = document.getElementById('doorOverlay');
+        const interiorRoom = document.getElementById('interiorRoom');
+        const contentSections = document.querySelectorAll('.content-section');
+        const navDots = document.querySelectorAll('.nav-dot');
+
+        let currentSection = 0;
+        const totalSections = 4;
+
+        // Scroll handler
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const scrollProgress = scrollTop / (document.body.scrollHeight - windowHeight);
+
+            // Update navigation dots
+            updateNavDots(scrollProgress);
+
+            // Phase 1: Exterior zoom (0-25% scroll)
+            if (scrollProgress < 0.25) {
+                const zoomScale = 1 + (scrollProgress / 0.25); // 1 to 2
+                heroExterior.style.transform = `scale(${zoomScale})`;
+                heroContent.style.opacity = 1 - (scrollProgress / 0.25 * 0.7);
+                doorOverlay.classList.remove('active');
+                interiorRoom.classList.remove('visible');
+                currentSection = 0;
+            }
+            // Phase 2: Door transition (25-35% scroll)
+            else if (scrollProgress >= 0.25 && scrollProgress < 0.35) {
+                doorOverlay.classList.add('active');
+                heroExterior.style.transform = 'scale(2)';
+                heroContent.style.opacity = '0';
+                interiorRoom.classList.remove('visible');
+                currentSection = 1;
+            }
+            // Phase 3: Interior reveal (35-50% scroll)
+            else if (scrollProgress >= 0.35 && scrollProgress < 0.5) {
+                doorOverlay.classList.remove('active');
+                interiorRoom.classList.add('visible');
+                heroExterior.style.opacity = '0';
+                currentSection = 2;
+            }
+            // Phase 4: Content sections (50-100% scroll)
+            else {
+                interiorRoom.classList.add('visible');
+                heroExterior.style.opacity = '0';
+                
+                // Show content sections based on scroll
+                const contentScroll = (scrollProgress - 0.5) / 0.5; // 0 to 1
+                const activeSection = Math.min(Math.floor(contentScroll * 3), 2);
+                
+                contentSections.forEach((section, index) => {
+                    if (index === activeSection) {
+                        section.classList.add('visible');
+                    } else {
+                        section.classList.remove('visible');
+                    }
+                });
+                
+                currentSection = 3 + activeSection;
+            }
+
+            updateNavDotsActive();
+        });
+
+        function updateNavDots(scrollProgress) {
+            navDots.forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index === Math.floor(scrollProgress * (totalSections - 1))) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        function updateNavDotsActive() {
+            navDots.forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index === currentSection) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        function scrollToSection(sectionIndex) {
+            const totalHeight = document.body.scrollHeight - window.innerHeight;
+            const scrollPosition = (sectionIndex / (totalSections - 1)) * totalHeight;
+            
+            window.scrollTo({
+                top: scrollPosition,
+                behavior: 'smooth'
+            });
+        }
+
+        // Nav dot click handlers
+        navDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                scrollToSection(index);
+            });
+        });
+
+        // Smooth parallax effect on mouse move
+        document.addEventListener('mousemove', (e) => {
+            const mouseX = e.clientX / window.innerWidth - 0.5;
+            const mouseY = e.clientY / window.innerHeight - 0.5;
+
+            if (scrollY < window.innerHeight * 0.25) {
+                heroExterior.style.transform += ` translate(${mouseX * 20}px, ${mouseY * 20}px)`;
+            }
+        });
+
+        // Initialize
+        contentSections[0].classList.add('visible');
+    </script>
+</body>
+</html>
